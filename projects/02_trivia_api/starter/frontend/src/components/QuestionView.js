@@ -17,6 +17,7 @@ class QuestionView extends Component {
     }
   }
 
+  // means our component has rendered at least once
   componentDidMount() {
     this.getQuestions();
   }

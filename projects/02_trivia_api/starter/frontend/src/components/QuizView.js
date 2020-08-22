@@ -5,12 +5,12 @@ import '../stylesheets/QuizView.css';
 
 const questionsPerPlay = 5; 
 
-class QuizView extends Component {
+class QuizView extends Component { //the QuizView class
   constructor(props){
     super();
-    this.state = {
+    this.state = { //the state object in...^
         quizCategory: null,
-        previousQuestions: [], 
+        previousQuestions: [], //previousQuestions list inside...^
         showAnswer: false,
         categories: {},
         numCorrect: 0,
@@ -43,19 +43,21 @@ class QuizView extends Component {
     this.setState({[event.target.name]: event.target.value})
   }
 
-  getNextQuestion = () => {
-    const previousQuestions = [...this.state.previousQuestions]
+  getNextQuestion = () => { // every question currently selected is pushed to this list
+    const previousQuestions = [...this.state.previousQuestions] 
     if(this.state.currentQuestion.id) { previousQuestions.push(this.state.currentQuestion.id) }
 
-    $.ajax({
+    $.ajax({ //the ajax call to the /quizzes endpoint, sends...
       url: '/quizzes', //TODO: update request URL
       type: "POST",
       dataType: 'json',
       contentType: 'application/json',
       data: JSON.stringify({
-        previous_questions: previousQuestions,
-        quiz_category: this.state.quizCategory
-      }),
+        previous_questions: previousQuestions, //a request containing the previousQuestions list...
+        quiz_category: this.state.quizCategory //along with the quiz category...
+      }), //back to the server side
+      //This way the server side code does not need to handle the ids of all the previous questions 
+      //already displayed in the quiz.
       xhrFields: {
         withCredentials: true
       },
