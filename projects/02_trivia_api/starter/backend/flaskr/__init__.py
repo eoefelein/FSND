@@ -295,7 +295,7 @@ def create_app(test_config=None):
             {
                 "success": True,
                 "questions": paginated,
-                "current_category": category.type,  # is type being pulled from paginate helper function?
+                "category": category.type,  # is type being pulled from paginate helper function?
                 "total_questions": len(Question.query.all()),
             }
         )
@@ -322,11 +322,11 @@ def create_app(test_config=None):
         selection = Question.query.filter_by(category == category.id)
 
         # get the previous questions - this is defined on the front-end
-        prior_questions = body.get("prior_questions")
+        previous_questions = body.get("previous_questions")
         # get the category - this is defined on the front-end
         category = body.get("quiz_category")
 
-        if (category is None) or (prior_questions is None):
+        if (category is None) or (previous_questions is None):
             abort(404)
 
         # if ALL is selected, load all questions, otherwise...
@@ -349,7 +349,7 @@ def create_app(test_config=None):
         # check to see if question has already been used
         def check_if_used(question):
             used = False
-            for question in prior_questions:
+            for question in previous_questions:
                 if question == question.id:
                     used = True
             return used
@@ -359,7 +359,7 @@ def create_app(test_config=None):
             question = generate_random_question()
 
             # if unable to find unused question, return no question
-            if len(prior_questions) == total:
+            if len(previous_questions) == total:
                 return jsonify(
                     {"success": True, "message": "Sorry, all questions have been used!"}
                 )

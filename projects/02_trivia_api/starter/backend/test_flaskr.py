@@ -89,7 +89,10 @@ class TriviaTestCase(unittest.TestCase):
         data = json.loads(response.data)
         num_questions_after = Question.query.all()
 
-        question = Question.query.filter
+        # use the question id, captured and stored in question_id variable,
+        # to verify that question has been deleted
+        # why would id need to equal 1? wouldn't we want to check the len here?
+        question = Question.query.filter(Question.id == 1).one_or_none()
 
         # check status code
         self.assertEqual(response.status_code, 200)
@@ -148,7 +151,7 @@ class TriviaTestCase(unittest.TestCase):
     # tests that search question functionality works as expected
     def test_search(self):
         #send post request with search term
-        response = self.client().post('/questions', json={'searchTerm': 'National Parks'})
+        response = self.client().post('/questions', json={'searchTerm': 'Organ'})
         # load response data
         data = json.loads(response.data)
 
@@ -157,7 +160,7 @@ class TriviaTestCase(unittest.TestCase):
         # check success message
         self.assertEqual(data['success'], True)
         # check that num of results is 1
-        self.assertEqual(data['questions'][0]['id'], __)
+        self.assertEqual(len(data['questions'], 1)
 
     # tests 404 response should question search fail
     def test_response_should_question_search_fail(self):
@@ -205,7 +208,7 @@ class TriviaTestCase(unittest.TestCase):
 
     # test functionality of playing the quiz game itself
     def test_play_the_quiz_game(self):
-        response = self.client().post('/quizzes', json={'prior_questions': [7,8], 
+        response = self.client().post('/quizzes', json={'previous_questions': [7,8], 
         'quiz_category': {'type': 'Outdoors', 'id': '1'}})
         # load response data
         data = json.loads(response.data)
@@ -218,7 +221,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertTrue(data['question'])
         # check that the question returned is in correct category
         self.assertEqual(data['question']['category'], 5)
-        # check that question returned is not on prior question list
+        # check that question returned is not on previous question list
         self.assertNotEqual(data['question']['id'], 7)
         self.assertNotEqual(data['question']['id'], 8)
 
