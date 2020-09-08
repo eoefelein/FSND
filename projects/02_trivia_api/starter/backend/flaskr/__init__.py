@@ -25,7 +25,7 @@ def create_app(test_config=None):
     """
   @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
   """
-    cors = CORS(app, resources={r"/api*": {origin: "*"}})  # resource-specific usage
+    cors = CORS(app, resources={r"/api*": {"origins": "*"}})  # resource-specific usage
     # additional parameter, resources, is passed - obj within which
     # keys are URI for given resource (here '/api')
     # and values map to specified origins that have access to that resource
@@ -36,7 +36,7 @@ def create_app(test_config=None):
     # Flask decorator, which serves to add headers to the response
     # this method will take the response as a parameter, make some edits to it and return it
 
-    @app.after_request(response)
+    @app.after_request
     def after_request(response):
         # CORS Headers
         # allowing for content-type authorization
@@ -59,7 +59,7 @@ def create_app(test_config=None):
     # we can implement the @cross_origin decorator, prior to the handling of that route,
     # in order to enable CORS specifically for that endpoint
     @app.route("/categories")
-    @cross_origin()  # route-specific usage
+    # @cross_origin()  # route-specific usage
     def get_categories():
         categories = Category.query.all()
         categories_dict = {}
@@ -373,6 +373,15 @@ def create_app(test_config=None):
   including 404 and 422. 
   """
 
+    @app.errorhandler(400)
+    def unprocessable(error):
+        return (
+            jsonify(
+                {"success": True, "error": 400, "message": "Bad request"}
+            ),
+            400,
+        )
+
     @app.errorhandler(404)
     def not_found(error):
         return jsonify({"success": False, "error": 404, "message": "Not found"}), 404
@@ -384,6 +393,15 @@ def create_app(test_config=None):
                 {"success": True, "error": 422, "message": "Request is unprocessable"}
             ),
             422,
+        )
+
+    @app.errorhandler(500)
+    def unprocessable(error):
+        return (
+            jsonify(
+                {"success": True, "error": 400, "message": "Bad response"}
+            ),
+            400,
         )
 
     return app
