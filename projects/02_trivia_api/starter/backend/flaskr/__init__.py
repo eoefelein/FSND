@@ -8,86 +8,83 @@ from models import setup_db, Question, Category
 
 QUESTIONS_PER_PAGE = 10
 
-# when request is passed in as a param here,
-# we can use args associated with request to get the page num
-def paginate_books(request, selection):
-    page = request.args.get("page", 1, type=int)
-    # so start and end correspond to the ids of each ind book being returned to the page
-    start = (page - 1) * QUESTIONS_PER_PAGE
-    end = start + QUESTIONS_PER_PAGE
-
 
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__)
     setup_db(app)
-
     """
-  @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
-  """
-    cors = CORS(app, resources={r"/api*": {"origins": "*"}})  # resource-specific usage
+    @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
+    """
     # additional parameter, resources, is passed - obj within which
     # keys are URI for given resource (here '/api')
     # and values map to specified origins that have access to that resource
-
-    """
-  @TODO: Use the after_request decorator to set Access-Control-Allow
-  """
-    # Flask decorator, which serves to add headers to the response
-    # this method will take the response as a parameter, make some edits to it and return it
+    cors = CORS(app, resources={r"/api*": {"origins": "*"}})  # resource-specific usage
 
     @app.after_request
     def after_request(response):
         # CORS Headers
         # allowing for content-type authorization
         response.headers.add(
-            "Access-Control-Allow-Headers", "Content-Type,Authorization,true"
+            "Access-Control-Allow-Headers", "Content-Type,Authorization"
         )
         # specifying response headers so as to allow for different methods
         response.headers.add(
-            "Access-Control-Allow-Methods", "GET, PATCH, POST, DELETE, OPTIONS"
+            "Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS"
         )
         return response
 
+    # when request is passed in as a param here,
+    # we can use args associated with request to get the page num
+    def paginate_questions(request, selection):
+        page = request.args.get("page", 1, type=int)
+        # so start and end correspond to the ids of each ind book being returned to the page
+        start = (page - 1) * QUESTIONS_PER_PAGE
+        end = start + QUESTIONS_PER_PAGE
+        questions = [q.format() for q in selection]
+        current_qs = questions[start:end]
+        return current_qs
+
+    # helper function to get categories
+    def get_categories():
+        categories = Category.query.order_by(Category.id).all()
+        categories = [c.format() for c in categories]
+        categories = {k: v for d in categories for k, v in d.items()}
+        return categories
+
     """
-  @TODO: 
-  Create an endpoint to handle GET requests 
-  for all available categories.
-  """
+    @TODO:
+    Create an endpoint to handle GET requests
+    for all available categories.
+    """
+
+    @app.route("/")
+    def home():
+        return jsonify({"success": True})
 
     # for specific routes and endpoints for which we'd want to allow cross-origin resource sharing,
     # we can implement the @cross_origin decorator, prior to the handling of that route,
     # in order to enable CORS specifically for that endpoint
     @app.route("/categories")
     # @cross_origin()  # route-specific usage
-    def get_categories():
-        categories = Category.query.all()
-        categories_dict = {}
-        for category in categories:
-            categories_dict[category.id] = category.type
-
-        # abort 404 if no categories found
-        if (len(categories_dict) == 0):
-            abort(404)
-
-        # return data to view
-        return jsonify({
-            'success': True,
-            'categories': categories_dict
-        })
+    def get_those_categories():
+        categories = get_categories()
+        return jsonify(
+            {"success": True, "categories": categories, "current_category": None,}
+        )
 
     """
-  @TODO: 
-  Create an endpoint to handle GET requests for questions, 
-  including pagination (every 10 questions). 
-  This endpoint should return a list of questions, 
-  number of total questions, current category, categories. 
+    @TODO:
+    Create an endpoint to handle GET requests for questions,
+    including pagination (every 10 questions).
+    This endpoint should return a list of questions,
+    number of total questions, current category, categories.
 
-  TEST: At this point, when you start the application
-  you should see questions and categories generated,
-  ten questions per page and pagination at the bottom of the screen for three pages.
-  Clicking on the page numbers should update the questions. 
-  """
+    TEST: At this point, when you start the application
+    you should see questions and categories generated,
+    ten questions per page and pagination at the bottom of the screen for three pages.
+    Clicking on the page numbers should update the questions.
+    """
     # starting with the get request is a nice way to get acccess to the DB,
     # and start to see things working
     # following endpoint rules, we want to set up endpoints based on collections,
@@ -96,41 +93,26 @@ def create_app(test_config=None):
     def get_questions():
         # use the Question, imported from models.py, to get all Question objs
         # and format with the method defined
-        questions = Questions.query.all()
-        formatted_questions = [question.format() for question in questions]
-        # JSON response body obj returned to the user, all questions can be returned here
-        return jsonify({"success": True, "questions": formatted_questions})
+        ordered_questions = Question.query.order_by(Question.id).all()
+        questions = paginate_questions(request, ordered_questions)
+        if len(questions) == 0:
+            abort(404)
+        all_cat = list(map(Category.format, Category.query.all()))
+        output = {'success': True,
+                  'questions': questions,
+                  'total_questions': len(ordered_questions),
+                  'current_category': None,
+                  'categories': all_cat
+                  }
+        return jsonify(output)
 
-    # # my attempt and the on I ask the question for with Udacity's Mentor Help
-    # @app.route("/questions")
-    # def get_questions():
-    #     # load the request body
-    #     body = request.get_json()
-    #     # if search_term exists...
-    #     if body.get("search_term"):
-    #         # get search_term from user
-    #         search_term = body.get("search_term")
-    #         # query the database using the search term
-    #     selection = Question.query.filter(
-    #         Question.question.ilike(f"%{search_term}%")
-    #     ).all()
-    #     # if len(selection)==0), then the question with the "searchTerm" doesn't exist in the db
-    #     # and so a 404(not found) error is raised. How would you address this depends on the proj.
-    #     # For this project, we want to show that the question was not found
-    #     # and add that question to the db
-    #     if len(selection) == 0:
-    #         abort(404)
-    #     paginated = request.args.get("paginated")
-    #     question = Question(question=question)
-    #     if exists:
-    #         return question.jsonify({"success": True, "question": question})
 
     """
-  @TODO: 
-  Create an endpoint to DELETE question using a question ID. 
+  @TODO:
+  Create an endpoint to DELETE question using a question ID.
 
   TEST: When you click the trash icon next to a question, the question will be removed.
-  This removal will persist in the database and when you refresh the page. 
+  This removal will persist in the database and when you refresh the page.
   """
 
     @app.route("/questions/<int:id>", methods=["DELETE"])
@@ -169,25 +151,25 @@ def create_app(test_config=None):
             abort(422)
 
     """
-  @TODO: 
-  Create an endpoint to POST a new question, 
-  which will require the question and answer text, 
+  @TODO:
+  Create an endpoint to POST a new question,
+  which will require the question and answer text,
   category, and difficulty score.
 
-  TEST: When you submit a question on the "Add" tab, 
+  TEST: When you submit a question on the "Add" tab,
   the form will clear and the question will appear at the end of the last page
-  of the questions list in the "List" tab.  
+  of the questions list in the "List" tab.
   """
 
     """
-  @TODO: 
-  Create a POST endpoint to get questions based on a search term. 
-  It should return any questions for whom the search term 
-  is a substring of the question. 
+  @TODO:
+  Create a POST endpoint to get questions based on a search term.
+  It should return any questions for whom the search term
+  is a substring of the question.
 
-  TEST: Search by any phrase. The questions list will update to include 
-  only question that include that string within their question. 
-  Try using the word "title" to start. 
+  TEST: Search by any phrase. The questions list will update to include
+  only question that include that string within their question.
+  Try using the word "title" to start.
   """
 
     @app.route("/questions", methods=["POST"])
@@ -268,12 +250,12 @@ def create_app(test_config=None):
                 abort(422)
 
     """
-  @TODO: 
-  Create a GET endpoint to get questions based on category. 
+  @TODO:
+  Create a GET endpoint to get questions based on category.
 
-  TEST: In the "List" tab / main screen, clicking on one of the 
-  categories in the left column will cause only questions of that 
-  category to be shown. 
+  TEST: In the "List" tab / main screen, clicking on one of the
+  categories in the left column will cause only questions of that
+  category to be shown.
   """
 
     @app.route("/categories/<int:id>/questions")
@@ -301,15 +283,15 @@ def create_app(test_config=None):
         )
 
     """
-  @TODO: 
-  Create a POST endpoint to get questions to play the quiz. 
-  This endpoint should take category and previous question parameters 
-  and return a random questions within the given category, 
-  if provided, and that is not one of the previous questions. 
+  @TODO:
+  Create a POST endpoint to get questions to play the quiz.
+  This endpoint should take category and previous question parameters
+  and return a random questions within the given category,
+  if provided, and that is not one of the previous questions.
 
   TEST: In the "Play" tab, after a user selects "All" or a category,
   one question at a time is displayed, the user is allowed to answer
-  and shown whether they were correct or not. 
+  and shown whether they were correct or not.
   """
 
     @app.route("/quizzes", methods=["POST"])
@@ -368,23 +350,24 @@ def create_app(test_config=None):
         return jsonify({"success": True, "question": question.format()})
 
     """
-  @TODO: 
-  Create error handlers for all expected errors 
-  including 404 and 422. 
+  @TODO:
+  Create error handlers for all expected errors
+  including 404 and 422.
   """
 
     @app.errorhandler(400)
     def unprocessable(error):
         return (
-            jsonify(
-                {"success": True, "error": 400, "message": "Bad request"}
-            ),
+            jsonify({"success": True, "error": 400, "message": "Bad request"}),
             400,
         )
 
     @app.errorhandler(404)
     def not_found(error):
-        return jsonify({"success": False, "error": 404, "message": "Not found"}), 404
+        return (
+            jsonify({"success": False, "error": 404, "message": "Resource not found"}),
+            404,
+        )
 
     @app.errorhandler(422)
     def unprocessable(error):
@@ -398,9 +381,7 @@ def create_app(test_config=None):
     @app.errorhandler(500)
     def unprocessable(error):
         return (
-            jsonify(
-                {"success": True, "error": 400, "message": "Bad response"}
-            ),
+            jsonify({"success": True, "error": 400, "message": "Bad response"}),
             400,
         )
 
