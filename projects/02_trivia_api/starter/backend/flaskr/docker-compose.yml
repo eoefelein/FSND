@@ -1,0 +1,28 @@
+FROM python:3-onbuild
+version: '2'
+
+services:
+
+  app:
+    image: nginx:latest
+    container_name: app
+
+  proxy:
+    image: httpd:latest
+    container_name: proxy
+    depends_on:
+     - app
+
+services:
+
+  app:
+    ...
+    ports:
+      - "443:443"
+    ...
+
+  proxy:
+    ...
+    ports:
+      - "9443:443"
+    ...

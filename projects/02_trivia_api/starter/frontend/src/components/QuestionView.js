@@ -30,7 +30,7 @@ class QuestionView extends Component {
         this.setState({
           questions: result.questions,
           totalQuestions: result.total_questions,
-          categories: result.categories,
+          categories: Object.fromEntries(result.categories.map(({id, type})=>[id, type])),
           currentCategory: result.current_category })
         return;
       },
