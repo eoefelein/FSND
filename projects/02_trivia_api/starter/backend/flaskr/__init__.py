@@ -14,12 +14,16 @@ def create_app(test_config=None):
     app = Flask(__name__)
     setup_db(app)
     """
-    @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
+    @TODO: Set up CORS.
+    Allow '*' for origins. Delete the sample route after completing the TODOs
     """
     # additional parameter, resources, is passed - obj within which
     # keys are URI for given resource (here '/api')
     # and values map to specified origins that have access to that resource
-    cors = CORS(app, resources={r"/api*": {"origins": "*"}})  # resource-specific usage
+    cors = CORS(
+        app,
+        resources={r"/api*": {"origins": "*"}}
+    )  # resource-specific usage
 
     @app.after_request
     def after_request(response):
@@ -38,7 +42,7 @@ def create_app(test_config=None):
     # we can use args associated with request to get the page num
     def paginate_questions(request, selection):
         page = request.args.get("page", 1, type=int)
-        # so start and end correspond to the ids of each ind book being returned to the page
+        # so start & end correspond to ids of each book returned to the page
         start = (page - 1) * QUESTIONS_PER_PAGE
         end = start + QUESTIONS_PER_PAGE
         questions = [q.format() for q in selection]
@@ -62,15 +66,19 @@ def create_app(test_config=None):
     def home():
         return jsonify({"success": True})
 
-    # for specific routes and endpoints for which we'd want to allow cross-origin resource sharing,
-    # we can implement the @cross_origin decorator, prior to the handling of that route,
+    # for specific routes & endpoints for which we want to allow CORS,
+    # we can use @cross_origin, prior to the handling of that route,
     # in order to enable CORS specifically for that endpoint
     @app.route("/categories")
     # @cross_origin()  # route-specific usage
     def get_those_categories():
         categories = get_categories()
         return jsonify(
-            {"success": True, "categories": categories, "current_category": None,}
+            {
+                "success": True,
+                "categories": categories,
+                "current_category": None,
+            }
         )
 
     """
@@ -82,12 +90,13 @@ def create_app(test_config=None):
 
     TEST: At this point, when you start the application
     you should see questions and categories generated,
-    ten questions per page and pagination at the bottom of the screen for three pages.
+    ten questions per page
+    and pagination at the bottom of the screen for three pages.
     Clicking on the page numbers should update the questions.
     """
     # starting with the get request is a nice way to get acccess to the DB,
-    # and start to see things working
-    # following endpoint rules, we want to set up endpoints based on collections,
+    # and start to see things working.
+    # following endpoint rules, we set up endpoints based on collections,
     # in this case, collections of questions
     @app.route("/questions")
     def get_questions():
@@ -98,20 +107,21 @@ def create_app(test_config=None):
         if len(questions) == 0:
             abort(404)
         all_cat = list(map(Category.format, Category.query.all()))
-        output = {'success': True,
-                  'questions': questions,
-                  'total_questions': len(ordered_questions),
-                  'current_category': None,
-                  'categories': all_cat
-                  }
+        output = {
+            "success": True,
+            "questions": questions,
+            "total_questions": len(ordered_questions),
+            "current_category": None,
+            "categories": all_cat,
+        }
         return jsonify(output)
-
 
     """
   @TODO:
   Create an endpoint to DELETE question using a question ID.
 
-  TEST: When you click the trash icon next to a question, the question will be removed.
+  TEST: When you click the trash icon next to a question,
+  the question will be removed.
   This removal will persist in the database and when you refresh the page.
   """
 
@@ -119,36 +129,40 @@ def create_app(test_config=None):
     def delete_question(id):
         body = request.get_json()
         try:
-            # first thing to do is to make sure that question exists...if question doesn't exist
+            # first thing TODO is to make sure question exists...
+            # if question doesn't exist:
             question = Question.query.filter_by(id == id).one_or_none()
-            # one_or none() sqlalchemy method returns at most one result or raises an exception,
-            # so if multiple objects are returned, raises sqlalchemy.orm.exc.MultipleResultsFound
+            # one_or none() sqlalchemy method returns:
+            # 1) at most one result or 2) raises an exception,
+            # so if multiple objects are returned,
+            # raises sqlalchemy.orm.exc.MultipleResultsFound
 
             if question is None:  # if question doesn't exist
                 abort(
                     404
-                )  # which indicates that the question doesn't exist and cannot be deleted
+                )  # indicates the question doesn't exist & can't be deleted
 
             # otherwise, delete the question:
             question.delete()
             # find selection of ordered questions...
             selection = Question.query.order_by(Question.id).all()
-            # ... and paginate based on our current location within that selection
+            # ... & paginate based on our current location within the selection
             current_question = paginate_books(request, selection)
 
             return jsonify(
                 {
                     "success": True,
                     "deleted": question.id,
-                    "questions": current_question,  # current_questions on the page we're currently on
+                    # current_questions on pg we're on currently
+                    "questions": current_question,
                     "total_questions": len(
                         Question.query.all()
-                    ),  # total questions front-end can keep pageined/updated
+                    ),  # total questions kept paginated/updated
                 }
             )
-        except:
-            # should issue arise in deleting the question, abort
+        except unprocessable:
             abort(422)
+            # should issue arise in deleting the question, abort
 
     """
   @TODO:
@@ -181,7 +195,8 @@ def create_app(test_config=None):
         if body.get("searchTerm"):
             search_term = body.get("searchTerm")
 
-            # query the database using the search term, use ilike for pattern matching with Postgres SQL
+            # query the database using the search term,
+            # use ilike for pattern matching with Postgres SQL
             selection = Question.query.filter(
                 Question.question.ilike(f"%{search_term}%")
             ).all()
@@ -245,9 +260,9 @@ def create_app(test_config=None):
                         "total_questions": len(Question.query.all()),
                     }
                 )
-            except:
-                # abort unpreocessable if exception
+            except unprocessable:
                 abort(422)
+                # abort unprocessable if exception
 
     """
   @TODO:
@@ -269,7 +284,8 @@ def create_app(test_config=None):
         # get the matching questions
         selection = Question.query.filter_by(category == category.id).all()
 
-        # paginate the selection - why would you need to paginate if using one_or_none method
+        # paginate the selection...
+        # why would you need to paginate if using one_or_none method
         paginated = paginate_questions(request, selection)
 
         # return the results
@@ -277,7 +293,8 @@ def create_app(test_config=None):
             {
                 "success": True,
                 "questions": paginated,
-                "category": category.type,  # is type being pulled from paginate helper function?
+                # is type being pulled from paginate helper function?
+                "category": category.type,
                 "total_questions": len(Question.query.all()),
             }
         )
@@ -316,7 +333,10 @@ def create_app(test_config=None):
             questions = Question.query.all()
         # load questions for only the category specified
         else:
-            questions = Question.query.filter_by(category == category["id"]).all()
+            questions = Question
+            .query
+            .filter_by(category == category["id"])
+            .all()
 
         # get total num of questions
         total = len(questions)
@@ -336,15 +356,18 @@ def create_app(test_config=None):
                     used = True
             return used
 
-        # continue generating questions until question makes used condition is False
+        # continue generating questions until:
+        # used question condition = False
         while check_if_used(question):
             question = generate_random_question()
 
-            # if unable to find unused question, return no question
+            # if unable to find unused question,
+            # return no question
             if len(previous_questions) == total:
-                return jsonify(
-                    {"success": True, "message": "Sorry, all questions have been used!"}
-                )
+                return jsonify({
+                    "success": True,
+                    "message": "Sorry, all questions have been used!"
+                    })
 
         # else, return the question
         return jsonify({"success": True, "question": question.format()})
@@ -356,33 +379,50 @@ def create_app(test_config=None):
   """
 
     @app.errorhandler(400)
-    def unprocessable(error):
+    def bad_request(error):
         return (
-            jsonify({"success": True, "error": 400, "message": "Bad request"}),
+            jsonify({
+                "success": True,
+                "error": 400,
+                "message": "Bad request"
+                }),
             400,
         )
 
     @app.errorhandler(404)
     def not_found(error):
         return (
-            jsonify({"success": False, "error": 404, "message": "Resource not found"}),
+            jsonify({
+                "success": False,
+                "error": 404,
+                "message": "Resource not found"
+                }),
             404,
         )
 
     @app.errorhandler(422)
     def unprocessable(error):
         return (
-            jsonify(
-                {"success": True, "error": 422, "message": "Request is unprocessable"}
-            ),
+            jsonify({
+                "success": True,
+                "error": 422,
+                "message": "Request is unprocessable"
+                }),
             422,
         )
 
     @app.errorhandler(500)
-    def unprocessable(error):
+    def bad_response(error):
         return (
-            jsonify({"success": True, "error": 400, "message": "Bad response"}),
-            400,
+            jsonify({
+                "success": True,
+                "error": 500,
+                "message": "Bad response"
+                }),
+            500,
         )
 
     return app
+
+
+'\n'

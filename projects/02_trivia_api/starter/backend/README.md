@@ -70,25 +70,60 @@ REVIEW_COMMENT
 ```
 This README is missing documentation of your endpoints. Below is an example for your endpoint to get all categories. Please use it as a reference for creating your documentation and resubmit your code. 
 
-Endpoints
-GET '/categories'
-GET ...
-POST ...
-DELETE ...
+Endpoints:
+GET '/'
+ - Home Route, Landing Page
 
 GET '/categories'
-- Fetches a dictionary of categories in which the keys are the ids and the value is the corresponding string of the category
-- Request Arguments: None
-- Returns: An object with a single key, categories, that contains a object of id: category_string key:value pairs. 
-{'1' : "Science",
-'2' : "Art",
-'3' : "Geography",
-'4' : "History",
-'5' : "Entertainment",
-'6' : "Sports"}
+ - gets a list of categories
+Returns: a list of categories
+
+GET '/questions'
+ - gets questions
+Returns: 
+ - a pagined list of questions
+ - number of total questions
+ - the current category
+ - categories
+
+DELETE '/questions/<int:id>'
+ - Deletes a question by id using url params
+Returns: the id of deleted question upon success
+
+POST '/questions', methods=["POST"]
+ - Creates an endpoint to:
+1) POST a new question
+2) POST endpoint to get questions based on a search term
+Returns:
+ - the question and answer text
+ - category
+ - difficulty score
+ - any questions for which the search term is a substring of the question
+
+GET '/categories/<int:id>/questions'
+- get questions based on category
+Returns:
+ a question based on a category
+
+GET '/quizzes', methods=["POST"]
+ - get questions to play the quiz
+Returns:
+ a random questions within the given category, that is not one of the previous questions.
+
+Error Handling:
+The API returns Error messages in the following format:
+{
+    "success": False,
+    "error": 404,
+    "message": "Resource not found"
+}
+The API will return four (4) types of errors:
+    400 – bad request
+    404 – resource not found
+    422 – unprocessable
+    500 - bad response
 
 ```
-
 
 ## Testing
 To run the tests, run
